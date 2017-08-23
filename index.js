@@ -14,17 +14,25 @@ class Sbffr {
     this.shapeSizeTotal = shapeSizeTotal;
 
     const shapeSlices = {};
+    const shapeSubSliceSizes = {};
     let byteOffset = 0;
     for (let i = 0; i < shapes.length; i++) {
       const {name, constructor, size} = shapes[i];
 
-      let numBytes = Math.floor((buffer.byteLength * size) / shapeSizeTotal);
-      numBytes -= numBytes % constructor.BYTES_PER_ELEMENT;
+      let numBytes = Math.floor(buffer.byteLength * size / shapeSizeTotal);
+      numBytes -= numBytes % size;
+
       const numElements = numBytes / constructor.BYTES_PER_ELEMENT;
       shapeSlices[name] = new constructor(buffer.buffer, buffer.byteOffset + byteOffset, numElements);
+
+      let subSliceSize = Math.floor(numElements / count);
+      subSliceSize -= subSliceSize % size;
+      shapeSubSliceSizes[name] = subSliceSize;
+
       byteOffset += numBytes;
     }
     this.shapeSlices = shapeSlices;
+    this.shapeSubSliceSizes = shapeSubSliceSizes;
 
     const freeList = Array(count);
     for (let i = 0; i < freeList.length; i++) {
@@ -43,6 +51,7 @@ class Sbffr {
     const nextFreeList = (this.freeListStart + 1) % this.count;
     if (nextFreeList !== this.freeListEnd) {
       const index = this.freeList[this.freeListStart];
+      this.freeList[this.freeListStart] = NaN;
       this.freeListStart = nextFreeList;
 
       const result = {
@@ -53,8 +62,8 @@ class Sbffr {
         const shape = this.shapes[i];
         const shapeSlice = this.shapeSlices[shape.name];
 
-        const numElementsPerSubSlice = Math.floor(shapeSlice.length / this.count);
-        result.slices[shape.name] = shapeSlice.subarray(index * numElementsPerSubSlice, (index + 1) * numElementsPerSubSlice);
+        const subSliceSize = this.shapeSubSliceSizes[shape.name];
+        result.slices[shape.name] = shapeSlice.subarray(index * subSliceSize, (index + 1) * subSliceSize);
       }
       return result;
     } else {
