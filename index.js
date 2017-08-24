@@ -24,7 +24,7 @@ class Sbffr {
         byteOffset += size - alignDiff;
       }
 
-      let numBytes = Math.floor(buffer.byteLength * size / shapeSizeTotal);
+      let numBytes = Math.min(Math.floor(buffer.byteLength * size / shapeSizeTotal), buffer.byteLength - byteOffset);
       numBytes -= numBytes % size;
 
       const numElements = numBytes / constructor.BYTES_PER_ELEMENT;
