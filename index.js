@@ -19,6 +19,11 @@ class Sbffr {
     for (let i = 0; i < shapes.length; i++) {
       const {name, constructor, size} = shapes[i];
 
+      const alignDiff = byteOffset % size;
+      if (alignDiff > 0) {
+        byteOffset += size - alignDiff;
+      }
+
       let numBytes = Math.floor(buffer.byteLength * size / shapeSizeTotal);
       numBytes -= numBytes % size;
 
