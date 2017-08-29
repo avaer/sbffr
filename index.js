@@ -11,7 +11,8 @@ class Sbffr {
     for (let i = 0; i < shapes.length; i++) {
       shapeSizeTotal += shapes[i].size;
     }
-    this.shapeSizeTotal = shapeSizeTotal;
+
+    const totalDwords = Math.floor(buffer.byteLength / 8);
 
     const shapeSlices = {};
     const shapeSubSliceSizes = {};
@@ -19,19 +20,13 @@ class Sbffr {
     for (let i = 0; i < shapes.length; i++) {
       const {name, constructor, size} = shapes[i];
 
-      const alignDiff = byteOffset % size;
-      if (alignDiff > 0) {
-        byteOffset += size - alignDiff;
-      }
-
-      let numBytes = Math.min(Math.floor(buffer.byteLength * size / shapeSizeTotal), buffer.byteLength - byteOffset);
-      numBytes -= numBytes % size;
-
-      const numElements = numBytes / constructor.BYTES_PER_ELEMENT;
+      const numDwords = Math.floor(totalDwords * size / shapeSizeTotal);
+      const numBytes = numDwords * 8;
+      const numElements = Math.floor(numBytes / constructor.BYTES_PER_ELEMENT);
       shapeSlices[name] = new constructor(buffer.buffer, buffer.byteOffset + byteOffset, numElements);
 
       let subSliceSize = Math.floor(numElements / count);
-      subSliceSize -= subSliceSize % size;
+      subSliceSize -= subSliceSize % (size / constructor.BYTES_PER_ELEMENT);
       shapeSubSliceSizes[name] = subSliceSize;
 
       byteOffset += numBytes;
